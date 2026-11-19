@@ -1,6 +1,10 @@
 import { Suspense } from "react";
-import { addTodo, deleteTodoAction, toggleTodoAction } from "./actions";
+import { connection } from "next/server";
+import { addTodo } from "./actions";
 import { listTodos } from "@/lib/todos";
+import { TODO_CATEGORIES, TODO_PRIORITIES } from "@/lib/todo-options";
+import { getSeoulToday } from "@/lib/todo-view";
+import { TodoListClient } from "./todo-list-client";
 
 export default function Home() {
   return (
@@ -24,6 +28,28 @@ export default function Home() {
             maxLength={200}
             required
           />
+          <div className="todo-options">
+            <label className="option-field">
+              <span>마감일</span>
+              <input name="dueDate" type="date" />
+            </label>
+            <label className="option-field">
+              <span>우선순위</span>
+              <select name="priority" defaultValue="normal">
+                {TODO_PRIORITIES.map((priority) => (
+                  <option key={priority.value} value={priority.value}>{priority.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="option-field">
+              <span>카테고리</span>
+              <select name="category" defaultValue="other">
+                {TODO_CATEGORIES.map((category) => (
+                  <option key={category.value} value={category.value}>{category.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <button type="submit" className="add-button">
             <span aria-hidden="true">+</span> 추가
           </button>
@@ -40,57 +66,11 @@ export default function Home() {
 }
 
 async function TodoList() {
+  await connection();
   const todos = await listTodos();
-  const remaining = todos.filter((todo) => !todo.done).length;
+  const today = getSeoulToday(new Date());
 
-  return (
-    <>
-      <div className="list-heading">
-        <h2>할 일 목록</h2>
-        <span className="remaining-count">남은 할 일 {remaining}개</span>
-      </div>
-
-      {todos.length > 0 ? (
-        <ul className="todo-list">
-          {todos.map((todo) => (
-            <li className={`todo-item${todo.done ? " is-done" : ""}`} key={todo.id}>
-              <form action={toggleTodoAction}>
-                <input type="hidden" name="id" value={todo.id} />
-                <button
-                  type="submit"
-                  className="check-button"
-                  aria-label={todo.done ? `${todo.title} 완료 취소` : `${todo.title} 완료`}
-                  title={todo.done ? "완료 취소" : "완료"}
-                >
-                  {todo.done ? <span aria-hidden="true">✓</span> : null}
-                </button>
-              </form>
-              <span className="todo-title">{todo.title}</span>
-              <form action={deleteTodoAction}>
-                <input type="hidden" name="id" value={todo.id} />
-                <button
-                  type="submit"
-                  className="delete-button"
-                  aria-label={`${todo.title} 삭제`}
-                  title="삭제"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                    <path d="M4.5 6h11m-9.5 0 .6 10h6.8L14 6m-6.5 0V4.5h5V6m-4 2.5v5m3-5v5" />
-                  </svg>
-                </button>
-              </form>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="empty-state">
-          <span className="empty-icon" aria-hidden="true">✦</span>
-          <p>아직 할 일이 없어요.</p>
-          <span>첫 번째 할 일을 추가해 보세요!</span>
-        </div>
-      )}
-    </>
-  );
+  return <TodoListClient todos={todos} today={today} />;
 }
 
 function TodoListFallback() {

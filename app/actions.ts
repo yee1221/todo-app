@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { insertTodo, removeTodo, toggleTodo } from "@/lib/todos";
-
-const MAX_TODO_TITLE_LENGTH = 200;
+import { parseTodoInput } from "@/lib/todo-input";
 
 function readTodoId(formData: FormData) {
   const id = Number(formData.get("id"));
@@ -11,10 +10,10 @@ function readTodoId(formData: FormData) {
 }
 
 export async function addTodo(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  if (!title || title.length > MAX_TODO_TITLE_LENGTH) return;
+  const todo = parseTodoInput(formData);
+  if (!todo) return;
 
-  await insertTodo(title);
+  await insertTodo(todo);
   revalidatePath("/");
 }
 
