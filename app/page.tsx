@@ -1,10 +1,8 @@
+import { Suspense } from "react";
 import { addTodo, deleteTodoAction, toggleTodoAction } from "./actions";
 import { listTodos } from "@/lib/todos";
 
-export default async function Home() {
-  const todos = await listTodos();
-  const remaining = todos.filter((todo) => !todo.done).length;
-
+export default function Home() {
   return (
     <main className="page-shell">
       <section className="todo-card" aria-labelledby="page-title">
@@ -31,53 +29,80 @@ export default async function Home() {
           </button>
         </form>
 
-        <div className="list-heading">
-          <h2>할 일 목록</h2>
-          <span className="remaining-count">남은 할 일 {remaining}개</span>
-        </div>
-
-        {todos.length > 0 ? (
-          <ul className="todo-list">
-            {todos.map((todo) => (
-              <li className={`todo-item${todo.done ? " is-done" : ""}`} key={todo.id}>
-                <form action={toggleTodoAction}>
-                  <input type="hidden" name="id" value={todo.id} />
-                  <button
-                    type="submit"
-                    className="check-button"
-                    aria-label={todo.done ? `${todo.title} 완료 취소` : `${todo.title} 완료`}
-                    title={todo.done ? "완료 취소" : "완료"}
-                  >
-                    {todo.done ? <span aria-hidden="true">✓</span> : null}
-                  </button>
-                </form>
-                <span className="todo-title">{todo.title}</span>
-                <form action={deleteTodoAction}>
-                  <input type="hidden" name="id" value={todo.id} />
-                  <button
-                    type="submit"
-                    className="delete-button"
-                    aria-label={`${todo.title} 삭제`}
-                    title="삭제"
-                  >
-                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
-                      <path d="M4.5 6h11m-9.5 0 .6 10h6.8L14 6m-6.5 0V4.5h5V6m-4 2.5v5m3-5v5" />
-                    </svg>
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="empty-state">
-            <span className="empty-icon" aria-hidden="true">✦</span>
-            <p>아직 할 일이 없어요.</p>
-            <span>첫 번째 할 일을 추가해 보세요!</span>
-          </div>
-        )}
+        <Suspense fallback={<TodoListFallback />}>
+          <TodoList />
+        </Suspense>
 
         <footer className="card-footer">오늘도 하나씩 해내면 충분해요 <span aria-hidden="true">🌱</span></footer>
       </section>
     </main>
+  );
+}
+
+async function TodoList() {
+  const todos = await listTodos();
+  const remaining = todos.filter((todo) => !todo.done).length;
+
+  return (
+    <>
+      <div className="list-heading">
+        <h2>할 일 목록</h2>
+        <span className="remaining-count">남은 할 일 {remaining}개</span>
+      </div>
+
+      {todos.length > 0 ? (
+        <ul className="todo-list">
+          {todos.map((todo) => (
+            <li className={`todo-item${todo.done ? " is-done" : ""}`} key={todo.id}>
+              <form action={toggleTodoAction}>
+                <input type="hidden" name="id" value={todo.id} />
+                <button
+                  type="submit"
+                  className="check-button"
+                  aria-label={todo.done ? `${todo.title} 완료 취소` : `${todo.title} 완료`}
+                  title={todo.done ? "완료 취소" : "완료"}
+                >
+                  {todo.done ? <span aria-hidden="true">✓</span> : null}
+                </button>
+              </form>
+              <span className="todo-title">{todo.title}</span>
+              <form action={deleteTodoAction}>
+                <input type="hidden" name="id" value={todo.id} />
+                <button
+                  type="submit"
+                  className="delete-button"
+                  aria-label={`${todo.title} 삭제`}
+                  title="삭제"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                    <path d="M4.5 6h11m-9.5 0 .6 10h6.8L14 6m-6.5 0V4.5h5V6m-4 2.5v5m3-5v5" />
+                  </svg>
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="empty-state">
+          <span className="empty-icon" aria-hidden="true">✦</span>
+          <p>아직 할 일이 없어요.</p>
+          <span>첫 번째 할 일을 추가해 보세요!</span>
+        </div>
+      )}
+    </>
+  );
+}
+
+function TodoListFallback() {
+  return (
+    <>
+      <div className="list-heading">
+        <h2>할 일 목록</h2>
+        <span className="remaining-count">불러오는 중</span>
+      </div>
+      <div className="empty-state" aria-live="polite">
+        <p>할 일을 불러오고 있어요.</p>
+      </div>
+    </>
   );
 }
