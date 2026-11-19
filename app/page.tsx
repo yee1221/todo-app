@@ -1,69 +1,83 @@
-import Image from "next/image";
+import { addTodo, deleteTodoAction, toggleTodoAction } from "./actions";
+import { listTodos } from "@/lib/todos";
 
-export default function Home() {
+export default async function Home() {
+  const todos = await listTodos();
+  const remaining = todos.filter((todo) => !todo.done).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="page-shell">
+      <section className="todo-card" aria-labelledby="page-title">
+        <header className="page-header">
+          <p className="eyebrow">MY DAILY LIST</p>
+          <h1 id="page-title">오늘의 할 일</h1>
+          <p className="subtitle">작은 한 걸음씩, 차근차근 해내봐요.</p>
+        </header>
+
+        <form action={addTodo} className="add-form">
+          <label className="sr-only" htmlFor="todo-title">
+            새로운 할 일
+          </label>
+          <input
+            id="todo-title"
+            name="title"
+            type="text"
+            placeholder="새로운 할 일을 입력하세요"
+            maxLength={200}
+            required
+          />
+          <button type="submit" className="add-button">
+            <span aria-hidden="true">+</span> 추가
+          </button>
+        </form>
+
+        <div className="list-heading">
+          <h2>할 일 목록</h2>
+          <span className="remaining-count">남은 할 일 {remaining}개</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {todos.length > 0 ? (
+          <ul className="todo-list">
+            {todos.map((todo) => (
+              <li className={`todo-item${todo.done ? " is-done" : ""}`} key={todo.id}>
+                <form action={toggleTodoAction}>
+                  <input type="hidden" name="id" value={todo.id} />
+                  <button
+                    type="submit"
+                    className="check-button"
+                    aria-label={todo.done ? `${todo.title} 완료 취소` : `${todo.title} 완료`}
+                    title={todo.done ? "완료 취소" : "완료"}
+                  >
+                    {todo.done ? <span aria-hidden="true">✓</span> : null}
+                  </button>
+                </form>
+                <span className="todo-title">{todo.title}</span>
+                <form action={deleteTodoAction}>
+                  <input type="hidden" name="id" value={todo.id} />
+                  <button
+                    type="submit"
+                    className="delete-button"
+                    aria-label={`${todo.title} 삭제`}
+                    title="삭제"
+                  >
+                    <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                      <path d="M4.5 6h11m-9.5 0 .6 10h6.8L14 6m-6.5 0V4.5h5V6m-4 2.5v5m3-5v5" />
+                    </svg>
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="empty-state">
+            <span className="empty-icon" aria-hidden="true">✦</span>
+            <p>아직 할 일이 없어요.</p>
+            <span>첫 번째 할 일을 추가해 보세요!</span>
+          </div>
+        )}
+
+        <footer className="card-footer">오늘도 하나씩 해내면 충분해요 <span aria-hidden="true">🌱</span></footer>
+      </section>
+    </main>
   );
 }
